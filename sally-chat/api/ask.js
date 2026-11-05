@@ -8,10 +8,28 @@ ABOUT
 - Sally Cho is a Senior Product Designer with 9+ years leading design for enterprise platforms, public-sector tools, and design systems.
 - Most recently: Webex Control Hub at Cisco (design lead across the calling, admin, and provisioning teams) and immigration court systems at the U.S. Department of Justice (Executive Office for Immigration Review, EOIR), where she helped build the design practice from zero.
 - Employers and clients: Cisco Webex, U.S. Department of Justice, The World Bank.
+- In her words: strongest where workflows are dense, requirements are unsettled, and several teams need to agree on one direction. Also builds the design systems, standards, and critique habits that keep quality high across teams.
 - She runs her own research, prototypes in code (the animated walkthroughs in her case studies are coded), mentors other designers, and does her best work on the messiest workflow on the team.
-- Based in the SF Bay Area, California.
+- Based in Berkeley, California (SF Bay Area). Open to remote or hybrid roles. Relocation: not stated (ask Sally).
 - Core strengths: enterprise SaaS and admin UX; complex workflows and information architecture; design systems; AI feature design; research and usability testing; accessibility (WCAG 2.2, Section 508); prototyping in code; mentoring and design critique.
+- Skills (from her résumé): Product: product strategy, enterprise SaaS, platform and admin UX, complex workflows, information architecture, interaction design, prototyping. Research: user interviews, surveys, usability testing, journey mapping, behavioral analytics, research synthesis. Systems and accessibility: design systems, component libraries, design tokens, WCAG 2.2, Section 508, inclusive design. AI and code: AI feature design, LLM prototyping, HTML, CSS, JavaScript, Next.js, Supabase.
+- Design tools: Figma, FigJam, Figma Make, Miro, Jira, Claude, Codex.
+- Education: B.A. in Cognitive Science, concentration in Human-Computer Interaction, University of California, Berkeley (2017).
+- Certifications: Generative AI for UI/UX Design, IBM (2025); Accessibility and Inclusive Design, University of Illinois Urbana-Champaign (2024).
 - Contact: email sallyeunahcho@gmail.com, LinkedIn, résumé on her site.
+
+CAREER (from her résumé)
+- Senior Product Designer, Cisco (Webex), Jul 2022 to Jul 2026, remote. Design lead for Webex Calling administration in Control Hub (used by 100,000+ organizations), across the calling, admin, and provisioning product teams.
+  • Shifted the roadmap for multi-location deployment: research made the case for guided setup ahead of new bulk-configuration features; she then designed the progressive setup wizard that cut deployment time 35%.
+  • Used prototypes to align three teams on a guided UCM-to-Webex migration flow before requirements were set, replacing a manual CSV process. Support cases dropped 60% in three months; earned Cisco's Play to Win award.
+  • Defined the patterns for how AI calling features show what they changed and let admins review or turn them off. Designed AI feature discovery and setup; in testing, 9 of 10 admins set up AI Receptionist without help.
+  • Ran the weekly design critique for the calling admin team, mentored two product designers, helped standardize WCAG 2.2 patterns across admin workflows, and documented a shared state pattern that four product teams adopted.
+- Lead Product Designer, U.S. Department of Justice (EOIR), Dec 2018 to Jul 2022, Washington, DC. One of two product designers in a 105-person technology organization, leading design across 10+ immigration court applications.
+  • Onboarded the second designer and coached three engineers to run UX reviews.
+  • Set up how design, product, and engineering worked together on a White House-initiated product (daily standups, weekly demos, design QA every sprint), taking it from concept to launch in two months. Received the Extra Mile Award.
+  • Designed electronic case filing and case access, replacing physical mail and speeding some legal processing up to 4x.
+- Senior UI/UX Designer (contract), The World Bank, Aug 2018 to Nov 2018, Washington, DC: defined the information architecture, filtering, mapping, and visualization patterns for web and mobile executive dashboards tracking multi-billion-dollar portfolios; delivered prototypes with BI and front-end engineers in 3 to 4 week cycles.
+- UX/UI Designer and Web Specialist (internship), Acts2 Network, Jul 2017 to Aug 2018: reviewed 75+ Hotjar session recordings and site analytics to guide navigation and usability fixes.
 
 HOW SHE LEADS
 - Let evidence make the call: a survey of 465 judges set the direction for Judicial Tools; three rounds of testing moved guided setup ahead of bulk configuration on the Control Hub roadmap.
@@ -29,23 +47,23 @@ CASE STUDY: WEBEX CONTROL HUB (Cisco, 2024–2025)
 
 CASE STUDY: JUDICIAL TOOLS (U.S. DOJ / EOIR, 2021–2022)
 - Role: Lead Product Designer, one of the first two designers in a 105-person technology organization (90+ engineers, 15 PMs).
-- Problem: caseload grew 57% (692K to 1.09M); judges worked in a paper-shaped workflow on a vendor app shipped with almost no user validation.
+- Problem: caseload grew 57% (from 692K to 1.09M); judges worked in a paper-shaped workflow on a vendor app shipped with almost no user validation.
 - Research: survey of 465 judges (63% felt overwhelmed, 91% wanted a better workflow), then 15 in-depth judge interviews. Two-week sprints with weekly demos and design QA after every sprint.
 - Insight: judges think in families of cases (a lead respondent plus dependents called riders) but had to repeat every action case by case. A judge asked: "Is there a way to do the same action for the riders of the lead?"
 - Solution: three destinations instead of a maze of forms: Dashboard, Docket, Case. Actions on a lead carry through to its riders; submission stays locked until every legal requirement is met.
-- Results: completed cases per judge roughly doubled (about 420 to 810 a year); incomplete cases fell from 38% to 16%; service desk complaints dropped 76%; rolled out to immigration courts nationwide.
+- Results: completed cases per judge roughly doubled (from about 420 to 810 a year; annual case completions from 195K to 377K); incomplete cases fell from 38% to 16%; service desk complaints dropped 76%; rolled out to immigration courts nationwide.
 
 CASE STUDY: DOJ DESIGN SYSTEM (EOIR, 2021–2022)
 - Role: Lead Product Designer and design system architect, built from scratch with EOIR's front-end engineering leads and the Director.
 - Audited 300+ live screens and cataloged 150+ patterns; built the foundation into the Angular 7 codebase: 12-column grid, 4/8px spacing scale, accessible type and color tokens, atomic structure, Source Sans Pro and Merriweather.
-- Results: 85% faster front-end delivery; core layouts from days to about 30 minutes; 100% Section 508 compliance; 90%+ of UI and code duplication removed; a governance workflow that keeps design and engineering aligned.
+- Results: 85% faster front-end delivery; design time fell 50%; core layouts from days to about 30 minutes; 100% Section 508 compliance; 90%+ of UI and code duplication removed; a governance workflow that keeps design and engineering aligned.
 
 CASE STUDY: EOIR PUBLIC PORTAL (2021)
 - Role: Lead Product Designer (UX/UI, research, strategy, prototyping), working with 2 PMs and ~8 engineers.
 - Problem: attorneys, respondents, and the public pieced together immigration cases across a dozen disconnected tools.
 - Research: 15+ interviews and contextual research mapping how three user groups move through a case; several rounds of prototypes with PMs and developers.
 - Solution: one responsive, 508-compliant portal; principles: cut steps, validate forms early, one consistent pattern for secure uploads.
-- Results: 34% adoption lift; 1.8M+ electronic filings; 8/10 satisfaction in usability testing; the court's first multilingual case-access application.
+- Results: 34% adoption lift; 1.8M+ electronic filings; some legal processing up to 4x faster; 8/10 satisfaction in usability testing; the court's first multilingual case-access application.
 
 CASE STUDY: SUNNY (personal project, 2026)
 - An AI job-search companion Sally designed and coded solo with AI-assisted development (Claude Code, Next.js, Supabase): AI job scout (free-tier Gemini), interview prep, Gmail automation, one-click import of a 200+ row spreadsheet; rewards effort instead of outcomes. Live at sunny.sallycho.design; from first commit to live in about a week; she uses it every day.
@@ -86,7 +104,7 @@ ${FACTS}`
 // "from X to Y" result in the FACTS is a pair: an answer that quotes X without Y
 // is rejected (the next model is tried; the site falls back to its own answer).
 const num = (n) => new RegExp(`(?<![\\d.,])${n.replace(/[.%]/g, "\\$&")}(?![\\d])`)
-const PAIRS = [...FACTS.matchAll(/from (?:about )?(\d[\d.,]*%?) to (\d[\d.,]*%?)/g)]
+const PAIRS = [...FACTS.matchAll(/from (?:about )?(\d[\d.,]*[%KM]?) to (\d[\d.,]*[%KM]?)/g)]
   .map((m) => [m[1], m[2]])
   .filter(([a]) => (FACTS.match(new RegExp(num(a).source, "g")) || []).length === 1) // only numbers used once
 function brokenPair(answer) {
@@ -128,7 +146,7 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
-const VERSION = "8"
+const VERSION = "9"
 const API = "https://generativelanguage.googleapis.com/v1beta"
 let cachedModels = null, cachedAt = 0
 const noThinking = new Set() // models that rejected the thinking setting
