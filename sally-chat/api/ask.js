@@ -115,7 +115,7 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
-const VERSION = "5"
+const VERSION = "6"
 const API = "https://generativelanguage.googleapis.com/v1beta"
 let cachedModels = null, cachedAt = 0
 const noThinking = new Set() // models that rejected the thinking setting
@@ -171,66 +171,108 @@ function thinkingFor(model) {
   return null
 }
 
+// One model, one question. Waits until the shared deadline (no per-model cap);
+// `stop` aborts it as soon as another model has answered.
+async function askModel(key, model, contents, deadline, stop, tried) {
+  for (const withThinking of [true, false]) {
+    if (!withThinking && !noThinking.has(model)) break // only retry after a thinking-setting rejection
+    const left = deadline - Date.now()
+    if (left < 800 || stop.aborted) return { status: 504 }
+    const thinking = withThinking ? thinkingFor(model) : null
+    const generationConfig = {
+      temperature: 0.3,
+      maxOutputTokens: 1024,
+      responseMimeType: "application/json",
+      responseSchema: { type: "OBJECT", properties: { answer: { type: "STRING" }, topic: { type: "STRING", enum: TOPICS } }, required: ["answer", "topic"] },
+    }
+    if (thinking) generationConfig.thinkingConfig = thinking
+    const ctrl = new AbortController()
+    const onStop = () => ctrl.abort()
+    stop.addEventListener("abort", onStop)
+    const timer = setTimeout(() => ctrl.abort(), left)
+    try {
+      const r = await fetch(`${API}/models/${model}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents, generationConfig }),
+        signal: ctrl.signal,
+      })
+      tried.push(`${model}${thinking ? "" : " (no thinking cfg)"}: ${r.status}`)
+      if (r.status === 429) { coolUntil.set(model, Date.now() + 10 * 60_000); return { status: 429 } } // out of free quota
+      if (r.status === 503) { coolUntil.set(model, Date.now() + 2 * 60_000); return { status: 503 } } // overloaded
+      if (r.status === 400 && thinking) { noThinking.add(model); continue } // retry without the thinking setting
+      if (r.status === 404) { dead.add(model); return { status: 404 } }
+      if (!r.ok) return { status: r.status }
+      const data = await r.json()
+      const text = (data?.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || "").join("")
+      const parsed = parseReply(text)
+      const answer = parsed ? clean(parsed.answer, 900).replace(/\*\*|__|^#+\s*/gm, "") : ""
+      if (!answer || /^[{\["]/.test(answer)) { tried.push(`${model}: unusable reply`); return { status: 502 } }
+      const topic = TOPICS.includes(parsed.topic) ? parsed.topic : "none"
+      coolUntil.delete(model)
+      return { status: 200, answer, topic, model }
+    } catch {
+      if (stop.aborted) return { status: 499 } // another model already answered
+      tried.push(`${model}: timeout`)
+      coolUntil.set(model, Date.now() + 60_000) // slow once is usually a blip
+      return { status: 504 }
+    } finally {
+      clearTimeout(timer)
+      stop.removeEventListener("abort", onStop)
+    }
+  }
+  return { status: 502 }
+}
+
+const HEDGE_MS = 2500 // a model this slow gets a backup request; the first good answer wins
+
 async function callGemini(key, question, history, deadline) {
   const models = await pickModels(key)
   const contents = []
   for (const h of history) contents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.text }] })
   contents.push({ role: "user", parts: [{ text: question }] })
   const tried = []
-  let lastStatus = 502
   const now = Date.now()
   const alive = models.filter((m) => !dead.has(m))
   const ready = alive.filter((m) => (coolUntil.get(m) || 0) <= now)
-  // If every model is cooling down, try the ones that cool down soonest.
-  const order = ready.length ? ready : alive.slice().sort((a, b) => (coolUntil.get(a) || 0) - (coolUntil.get(b) || 0)).slice(0, 2)
-  for (const model of order) {
-    for (const withThinking of [true, false]) {
-      const left = deadline - Date.now()
-      if (left < 1000) return { status: lastStatus, tried }
-      const thinking = withThinking ? thinkingFor(model) : null
-      if (!withThinking && !noThinking.has(model)) break // only retry after a thinking-setting rejection
-      const generationConfig = {
-        temperature: 0.3,
-        maxOutputTokens: 1024,
-        responseMimeType: "application/json",
-        responseSchema: { type: "OBJECT", properties: { answer: { type: "STRING" }, topic: { type: "STRING", enum: TOPICS } }, required: ["answer", "topic"] },
-      }
-      if (thinking) generationConfig.thinkingConfig = thinking
-      const ctrl = new AbortController()
-      const timer = setTimeout(() => ctrl.abort(), Math.min(left, 3500))
-      try {
-        const r = await fetch(`${API}/models/${model}:generateContent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-          body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents, generationConfig }),
-          signal: ctrl.signal,
-        })
-        clearTimeout(timer)
-        tried.push(`${model}${thinking ? "" : " (no thinking cfg)"}: ${r.status}`)
-        if (r.status === 429 || r.status === 503) { coolUntil.set(model, Date.now() + 10 * 60_000); lastStatus = r.status; break }
-        if (r.status === 400 && thinking) { noThinking.add(model); continue } // retry without the thinking setting
-        if (r.status === 404) { dead.add(model); lastStatus = 404; break }
-        if (!r.ok) { lastStatus = r.status; break } // model unavailable: next model
-        const data = await r.json()
-        const text = (data?.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || "").join("")
-        const parsed = parseReply(text)
-        const answer = parsed ? clean(parsed.answer, 900).replace(/\*\*|__|^#+\s*/gm, "") : ""
-        if (!answer || /^[{\["]/.test(answer)) { tried.push(`${model}: unusable reply`); lastStatus = 502; break }
-        const topic = TOPICS.includes(parsed.topic) ? parsed.topic : "none"
-        // Remember the model that worked so later requests try it first.
-        cachedModels = [model, ...models.filter((m) => m !== model)]
-        coolUntil.delete(model)
-        return { status: 200, answer, topic, model }
-      } catch {
-        clearTimeout(timer)
-        tried.push(`${model}: timeout`)
-        coolUntil.set(model, Date.now() + 5 * 60_000)
-        lastStatus = 504
-        break
-      }
+  // Models cooling down still get a turn, after the ready ones, soonest-recovering first.
+  const cooling = alive.filter((m) => (coolUntil.get(m) || 0) > now).sort((a, b) => coolUntil.get(a) - coolUntil.get(b))
+  const queue = [...ready, ...cooling]
+  const stop = new AbortController()
+  const out = await new Promise((resolve) => {
+    let running = 0
+    let finished = false
+    let lastStatus = 502
+    let hedge = null
+    const finish = (o) => {
+      if (finished) return
+      finished = true
+      clearTimeout(hedge)
+      stop.abort()
+      resolve(o)
     }
-  }
-  return { status: lastStatus, tried }
+    const launch = () => {
+      if (finished) return
+      clearTimeout(hedge)
+      const model = queue.shift()
+      if (!model || deadline - Date.now() < 800) {
+        if (running === 0) finish({ status: lastStatus, tried })
+        return
+      }
+      running++
+      askModel(key, model, contents, deadline, stop.signal, tried).then((o) => {
+        running--
+        if (o.status === 200) return finish(o)
+        if (o.status !== 499) lastStatus = o.status
+        launch() // failed: try the next model right away
+      })
+      if (running < 2) hedge = setTimeout(launch, HEDGE_MS)
+    }
+    launch()
+  })
+  // Remember the model that worked so later requests try it first.
+  if (out.status === 200) cachedModels = [out.model, ...models.filter((m) => m !== out.model)]
+  return out
 }
 
 export default async function handler(req, res) {
@@ -256,8 +298,8 @@ export default async function handler(req, res) {
   // The current question is sent separately; drop it if the history already ends with it.
   if (history.length && history[history.length - 1].role === "user" && history[history.length - 1].text === question) history.pop()
 
-  const out = await callGemini(key, question, history, Date.now() + 8000)
-  if (out.status !== 200) return res.status(out.status).json({ error: "upstream", tried: out.tried })
+  const out = await callGemini(key, question, history, Date.now() + 7500)
+  if (out.status !== 200) return res.status(503).json({ error: "upstream", tried: out.tried })
   res.setHeader("Cache-Control", "no-store")
   res.setHeader("X-Model", out.model || "")
   return res.status(200).json({ answer: out.answer, topic: out.topic })
