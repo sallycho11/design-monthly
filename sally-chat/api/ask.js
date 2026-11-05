@@ -115,10 +115,11 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
-const VERSION = "2"
+const VERSION = "3"
 const API = "https://generativelanguage.googleapis.com/v1beta"
 let cachedModels = null, cachedAt = 0
 const noThinking = new Set() // models that rejected the thinking setting
+const coolUntil = new Map() // model -> time it can be tried again (429/503/timeout)
 
 // Ask Google which models this key can use and rank fast text models first,
 // so the server keeps working when Google retires or renames models.
@@ -137,10 +138,10 @@ async function pickModels(key) {
     }
   } catch { /* fall through to defaults */ }
   const ver = (n) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1])
-  const score = (n) => (n.includes("lite") ? 0 : 1) * 100 + ver(n) * 10 + (/latest/.test(n) ? -1 : 0)
+  const score = (n) => (n.includes("lite") ? 1 : 0) * 1000 + ver(n) * 10 + (/latest/.test(n) ? -1 : 0)
   names.sort((a, b) => score(b) - score(a))
   const defaults = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
-  cachedModels = [...new Set([...pinned, ...names.slice(0, 4), ...defaults])]
+  cachedModels = [...new Set([...pinned, ...names.slice(0, 6), ...defaults])]
   cachedAt = Date.now()
   return cachedModels
 }
@@ -159,7 +160,9 @@ async function callGemini(key, question, history, deadline) {
   contents.push({ role: "user", parts: [{ text: question }] })
   const tried = []
   let lastStatus = 502
-  for (const model of models) {
+  const now = Date.now()
+  const ready = models.filter((m) => (coolUntil.get(m) || 0) <= now)
+  for (const model of ready.length ? ready : models) {
     for (const withThinking of [true, false]) {
       const left = deadline - Date.now()
       if (left < 1200) return { status: lastStatus, tried }
@@ -173,7 +176,7 @@ async function callGemini(key, question, history, deadline) {
       }
       if (thinking) generationConfig.thinkingConfig = thinking
       const ctrl = new AbortController()
-      const timer = setTimeout(() => ctrl.abort(), Math.min(left, 7000))
+      const timer = setTimeout(() => ctrl.abort(), Math.min(left, 4500))
       try {
         const r = await fetch(`${API}/models/${model}:generateContent`, {
           method: "POST",
@@ -183,7 +186,7 @@ async function callGemini(key, question, history, deadline) {
         })
         clearTimeout(timer)
         tried.push(`${model}${thinking ? "" : " (no thinking cfg)"}: ${r.status}`)
-        if (r.status === 429) return { status: 429, tried }
+        if (r.status === 429 || r.status === 503) { coolUntil.set(model, Date.now() + 10 * 60_000); lastStatus = r.status; break }
         if (r.status === 400 && thinking) { noThinking.add(model); continue } // retry without the thinking setting
         if (!r.ok) { lastStatus = r.status; break } // model unavailable: next model
         const data = await r.json()
@@ -195,10 +198,12 @@ async function callGemini(key, question, history, deadline) {
         const topic = TOPICS.includes(parsed.topic) ? parsed.topic : "none"
         // Remember the model that worked so later requests try it first.
         cachedModels = [model, ...models.filter((m) => m !== model)]
+        coolUntil.delete(model)
         return { status: 200, answer, topic, model }
       } catch {
         clearTimeout(timer)
         tried.push(`${model}: timeout`)
+        coolUntil.set(model, Date.now() + 5 * 60_000)
         lastStatus = 504
         break
       }
@@ -233,5 +238,6 @@ export default async function handler(req, res) {
   const out = await callGemini(key, question, history, Date.now() + 12000)
   if (out.status !== 200) return res.status(out.status).json({ error: "upstream", tried: out.tried })
   res.setHeader("Cache-Control", "no-store")
+  res.setHeader("X-Model", out.model || "")
   return res.status(200).json({ answer: out.answer, topic: out.topic })
 }
