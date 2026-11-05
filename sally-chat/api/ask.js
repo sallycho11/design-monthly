@@ -81,7 +81,7 @@ WHAT COLLEAGUES SAY (exact quotes)
 - Sarah Park, Lead Product Designer, Verdara: "Sally has a rare ability to take incredibly complex, ambiguous problems and turn them into elegant, user-centric designs."
 `.trim()
 
-const TOPICS = ["start", "who", "impact", "ai", "lead", "research", "engineering", "a11y", "ch", "jt", "ds", "pp", "sunny", "skills", "experience", "awards", "location", "contact", "none"]
+const TOPICS = ["start", "who", "impact", "ai", "lead", "research", "engineering", "a11y", "ch", "jt", "ds", "pp", "sunny", "skills", "experience", "awards", "education", "location", "contact", "none"]
 
 const SYSTEM = `You are the friendly guide on Sally Cho's portfolio website. Visitors are mostly recruiters and hiring managers.
 
@@ -146,7 +146,7 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
-const VERSION = "9"
+const VERSION = "10"
 const API = "https://generativelanguage.googleapis.com/v1beta"
 let cachedModels = null, cachedAt = 0
 const noThinking = new Set() // models that rejected the thinking setting
