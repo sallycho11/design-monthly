@@ -115,54 +115,102 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
+const VERSION = "2"
+const API = "https://generativelanguage.googleapis.com/v1beta"
+let cachedModels = null, cachedAt = 0
+const noThinking = new Set() // models that rejected the thinking setting
+
+// Ask Google which models this key can use and rank fast text models first,
+// so the server keeps working when Google retires or renames models.
+async function pickModels(key) {
+  if (cachedModels && Date.now() - cachedAt < 6 * 3600_000) return cachedModels
+  const pinned = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL.replace(/^models\//, "")] : []
+  let names = []
+  try {
+    const r = await fetch(`${API}/models?pageSize=200`, { headers: { "x-goog-api-key": key } })
+    if (r.ok) {
+      const d = await r.json()
+      names = (d.models || [])
+        .filter((m) => (m.supportedGenerationMethods || []).includes("generateContent"))
+        .map((m) => String(m.name || "").replace(/^models\//, ""))
+        .filter((n) => /^gemini-/.test(n) && /flash/.test(n) && !/(image|tts|audio|live|embedding|vision|exp|preview|thinking)/.test(n))
+    }
+  } catch { /* fall through to defaults */ }
+  const ver = (n) => parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1])
+  const score = (n) => (n.includes("lite") ? 0 : 1) * 100 + ver(n) * 10 + (/latest/.test(n) ? -1 : 0)
+  names.sort((a, b) => score(b) - score(a))
+  const defaults = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
+  cachedModels = [...new Set([...pinned, ...names.slice(0, 4), ...defaults])]
+  cachedAt = Date.now()
+  return cachedModels
+}
+
+function thinkingFor(model) {
+  if (noThinking.has(model)) return null
+  if (/gemini-2\.5/.test(model)) return { thinkingBudget: 0 }
+  if (/gemini-[3-9]/.test(model) || /latest/.test(model)) return { thinkingLevel: "low" }
+  return null
+}
+
 async function callGemini(key, question, history, deadline) {
-  const models = [process.env.GEMINI_MODEL, "gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash"].filter(Boolean)
+  const models = await pickModels(key)
   const contents = []
   for (const h of history) contents.push({ role: h.role === "user" ? "user" : "model", parts: [{ text: h.text }] })
   contents.push({ role: "user", parts: [{ text: question }] })
+  const tried = []
   let lastStatus = 502
-  for (const model of [...new Set(models)]) {
-    const left = deadline - Date.now()
-    if (left < 1500) break
-    const generationConfig = {
-      temperature: 0.3,
-      maxOutputTokens: 400,
-      responseMimeType: "application/json",
-      responseSchema: { type: "OBJECT", properties: { answer: { type: "STRING" }, topic: { type: "STRING", enum: TOPICS } }, required: ["answer", "topic"] },
-    }
-    if (/2\.5-flash/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 }
-    const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), left)
-    try {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents, generationConfig }),
-        signal: ctrl.signal,
-      })
-      clearTimeout(timer)
-      if (r.status === 429) return { status: 429 }
-      if (!r.ok) { lastStatus = r.status; continue } // model unavailable or bad request: try the next one
-      const data = await r.json()
-      const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("")
-      let parsed
-      try { parsed = JSON.parse(text) } catch { parsed = { answer: text, topic: "none" } }
-      const answer = clean(parsed.answer, 900).replace(/\*\*|__|^#+\s*/gm, "")
-      if (!answer) { lastStatus = 502; continue }
-      const topic = TOPICS.includes(parsed.topic) ? parsed.topic : "none"
-      return { status: 200, answer, topic, model }
-    } catch {
-      clearTimeout(timer)
-      lastStatus = 504
+  for (const model of models) {
+    for (const withThinking of [true, false]) {
+      const left = deadline - Date.now()
+      if (left < 1200) return { status: lastStatus, tried }
+      const thinking = withThinking ? thinkingFor(model) : null
+      if (!withThinking && !noThinking.has(model)) break // only retry after a thinking-setting rejection
+      const generationConfig = {
+        temperature: 0.3,
+        maxOutputTokens: 500,
+        responseMimeType: "application/json",
+        responseSchema: { type: "OBJECT", properties: { answer: { type: "STRING" }, topic: { type: "STRING", enum: TOPICS } }, required: ["answer", "topic"] },
+      }
+      if (thinking) generationConfig.thinkingConfig = thinking
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), Math.min(left, 7000))
+      try {
+        const r = await fetch(`${API}/models/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+          body: JSON.stringify({ systemInstruction: { parts: [{ text: SYSTEM }] }, contents, generationConfig }),
+          signal: ctrl.signal,
+        })
+        clearTimeout(timer)
+        tried.push(`${model}${thinking ? "" : " (no thinking cfg)"}: ${r.status}`)
+        if (r.status === 429) return { status: 429, tried }
+        if (r.status === 400 && thinking) { noThinking.add(model); continue } // retry without the thinking setting
+        if (!r.ok) { lastStatus = r.status; break } // model unavailable: next model
+        const data = await r.json()
+        const text = (data?.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || "").join("")
+        let parsed
+        try { parsed = JSON.parse(text) } catch { parsed = { answer: text, topic: "none" } }
+        const answer = clean(parsed.answer, 900).replace(/\*\*|__|^#+\s*/gm, "")
+        if (!answer) { lastStatus = 502; break }
+        const topic = TOPICS.includes(parsed.topic) ? parsed.topic : "none"
+        // Remember the model that worked so later requests try it first.
+        cachedModels = [model, ...models.filter((m) => m !== model)]
+        return { status: 200, answer, topic, model }
+      } catch {
+        clearTimeout(timer)
+        tried.push(`${model}: timeout`)
+        lastStatus = 504
+        break
+      }
     }
   }
-  return { status: lastStatus }
+  return { status: lastStatus, tried }
 }
 
 export default async function handler(req, res) {
   const allowed = cors(req, res)
   if (req.method === "OPTIONS") return res.status(allowed ? 204 : 403).end()
-  if (req.method === "GET") return res.status(200).json({ ok: true, configured: !!process.env.GEMINI_API_KEY })
+  if (req.method === "GET") return res.status(200).json({ ok: true, version: VERSION, configured: !!process.env.GEMINI_API_KEY })
   if (req.method !== "POST") return res.status(405).json({ error: "method" })
   if (!allowed) return res.status(403).json({ error: "origin" })
 
@@ -182,8 +230,8 @@ export default async function handler(req, res) {
   // The current question is sent separately; drop it if the history already ends with it.
   if (history.length && history[history.length - 1].role === "user" && history[history.length - 1].text === question) history.pop()
 
-  const out = await callGemini(key, question, history, Date.now() + 9000)
-  if (out.status !== 200) return res.status(out.status).json({ error: "upstream" })
+  const out = await callGemini(key, question, history, Date.now() + 12000)
+  if (out.status !== 200) return res.status(out.status).json({ error: "upstream", tried: out.tried })
   res.setHeader("Cache-Control", "no-store")
   return res.status(200).json({ answer: out.answer, topic: out.topic })
 }
