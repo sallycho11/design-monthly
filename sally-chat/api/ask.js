@@ -36,7 +36,8 @@ HOW SHE LEADS
 - Let evidence make the call: a survey of 465 judges set the direction for Judicial Tools; three rounds of testing moved guided setup ahead of bulk configuration on the Control Hub roadmap.
 - Build what outlasts the project: helped build EOIR's design practice from zero as one of its first two designers; created the agency's first design system, wired into the codebase, with governance that kept it alive.
 - Design with engineering, not for it: when real-time validation hit backend latency on Control Hub, she and engineering designed async checks instead of dropping the feature or freezing the screen.
-- Raise the bar: at Cisco she mentored two designers and ran 30+ peer reviews across product pods.
+- Align teams with prototypes, not specs: on the UCM-to-Webex migration she used prototypes to align three teams on a guided flow before requirements were set. It replaced a manual CSV process; support cases dropped 60% in three months, and the work earned Cisco's Play to Win award.
+- Raise the bar: at Cisco she ran the weekly design critique for the calling admin team, mentored two designers, ran 30+ peer reviews across product pods, and documented a shared state pattern that four product teams adopted.
 
 CASE STUDY: WEBEX CONTROL HUB (Cisco, 2024–2025)
 - Role: Senior Product Designer, design lead across the calling, admin, and provisioning teams. Platform used by 100,000+ customer organizations.
@@ -147,7 +148,7 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
-const VERSION = "11"
+const VERSION = "12"
 const API = "https://generativelanguage.googleapis.com/v1beta"
 let cachedModels = null, cachedAt = 0
 const noThinking = new Set() // models that rejected the thinking setting
