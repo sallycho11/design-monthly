@@ -10,7 +10,8 @@ ABOUT
 - Employers and clients: Cisco Webex, U.S. Department of Justice, The World Bank.
 - In her words: strongest where workflows are dense, requirements are unsettled, and several teams need to agree on one direction. Also builds the design systems, standards, and critique habits that keep quality high across teams.
 - She runs her own research, prototypes in code (the animated walkthroughs in her case studies are coded), mentors other designers, and does her best work on the messiest workflow on the team.
-- Based in Berkeley, California (SF Bay Area). Open to remote or hybrid roles. Relocation: not stated (ask Sally).
+- Based in Berkeley, California (SF Bay Area). Relocation: not stated (ask Sally).
+- Availability: open to new Senior or Staff Product Designer roles, remote or hybrid. Her Cisco role ran through July 2026. Best way to start a conversation: email sallyeunahcho@gmail.com.
 - Core strengths: enterprise SaaS and admin UX; complex workflows and information architecture; design systems; AI feature design; research and usability testing; accessibility (WCAG 2.2, Section 508); prototyping in code; mentoring and design critique.
 - Skills (from her résumé): Product: product strategy, enterprise SaaS, platform and admin UX, complex workflows, information architecture, interaction design, prototyping. Research: user interviews, surveys, usability testing, journey mapping, behavioral analytics, research synthesis. Systems and accessibility: design systems, component libraries, design tokens, WCAG 2.2, Section 508, inclusive design. AI and code: AI feature design, LLM prototyping, HTML, CSS, JavaScript, Next.js, Supabase.
 - Design tools: Figma, FigJam, Figma Make, Miro, Jira, Claude, Codex.
@@ -22,7 +23,7 @@ CAREER (from her résumé)
 - Senior Product Designer, Cisco (Webex), Jul 2022 to Jul 2026, remote. Design lead for Webex Calling administration in Control Hub (used by 100,000+ organizations), across the calling, admin, and provisioning product teams.
   • Shifted the roadmap for multi-location deployment: research made the case for guided setup ahead of new bulk-configuration features; she then designed the progressive setup wizard that cut deployment time 35%.
   • Used prototypes to align three teams on a guided UCM-to-Webex migration flow before requirements were set, replacing a manual CSV process. Support cases dropped 60% in three months; earned Cisco's Play to Win award.
-  • Defined the patterns for how AI calling features show what they changed and let admins review or turn them off. Designed AI feature discovery and setup; in testing, 9 of 10 admins set up AI Receptionist without help.
+  • Defined the patterns for how AI calling features show what they changed and let admins review or turn them off. Designed AI feature discovery and setup, contributing to a 41% increase in AI feature adoption; in testing, 9 of 10 admins set up AI Receptionist without help.
   • Ran the weekly design critique for the calling admin team, mentored two product designers, helped standardize WCAG 2.2 patterns across admin workflows, and documented a shared state pattern that four product teams adopted.
 - Lead Product Designer, U.S. Department of Justice (EOIR), Dec 2018 to Jul 2022, Washington, DC. One of two product designers in a 105-person technology organization, leading design across 10+ immigration court applications.
   • Onboarded the second designer and coached three engineers to run UX reviews.
@@ -38,12 +39,12 @@ HOW SHE LEADS
 - Raise the bar: at Cisco she mentored two designers and ran 30+ peer reviews across product pods.
 
 CASE STUDY: WEBEX CONTROL HUB (Cisco, 2024–2025)
-- Role: Senior Product Designer, design lead across the calling, admin, and provisioning teams, working with 2 PMs and ~15 engineers. Platform used by 100,000+ customer organizations.
+- Role: Senior Product Designer, design lead across the calling, admin, and provisioning teams. Platform used by 100,000+ customer organizations.
 - Problem: IT admins set up thousands of devices one at a time with no checks; they only learned a rollout had failed after it failed, often from a support ticket.
 - Research: interviewed 8 IT admins across 6 regions, then three rounds of usability testing (6 participants each). Failed setups fell from 58% to 8% across rounds; task success rose 50%; time to complete dropped 38%.
 - Insight: speed wasn't the problem, confidence was. A faster bulk tool without validation would only have produced errors faster.
 - Solution: a four-phase Progressive Setup Wizard (Scope & Scale, Real-Time Simulation, Sustainability Integration, Async Bulk Action Success), built to WCAG 2.2, with async validation. AI troubleshooting placed inside the dashboards admins already watched.
-- Results: 35% faster deployment, 45% fewer provisioning errors, 40% more AI feature adoption. Research moved guided setup ahead of bulk configuration on the roadmap.
+- Results: 35% faster deployment, 45% fewer provisioning errors, 41% more AI feature adoption. Research moved guided setup ahead of bulk configuration on the roadmap.
 
 CASE STUDY: JUDICIAL TOOLS (U.S. DOJ / EOIR, 2021–2022)
 - Role: Lead Product Designer, one of the first two designers in a 105-person technology organization (90+ engineers, 15 PMs).
@@ -59,7 +60,7 @@ CASE STUDY: DOJ DESIGN SYSTEM (EOIR, 2021–2022)
 - Results: 85% faster front-end delivery; design time fell 50%; core layouts from days to about 30 minutes; 100% Section 508 compliance; 90%+ of UI and code duplication removed; a governance workflow that keeps design and engineering aligned.
 
 CASE STUDY: EOIR PUBLIC PORTAL (2021)
-- Role: Lead Product Designer (UX/UI, research, strategy, prototyping), working with 2 PMs and ~8 engineers.
+- Role: Lead Product Designer (UX/UI, research, strategy, prototyping).
 - Problem: attorneys, respondents, and the public pieced together immigration cases across a dozen disconnected tools.
 - Research: 15+ interviews and contextual research mapping how three user groups move through a case; several rounds of prototypes with PMs and developers.
 - Solution: one responsive, 508-compliant portal; principles: cut steps, validate forms early, one consistent pattern for secure uploads.
@@ -146,7 +147,7 @@ function cors(req, res) {
 
 const clean = (s, n) => String(s || "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, n)
 
-const VERSION = "10"
+const VERSION = "11"
 const API = "https://generativelanguage.googleapis.com/v1beta"
 let cachedModels = null, cachedAt = 0
 const noThinking = new Set() // models that rejected the thinking setting
